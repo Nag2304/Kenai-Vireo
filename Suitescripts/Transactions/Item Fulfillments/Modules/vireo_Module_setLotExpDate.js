@@ -40,6 +40,9 @@ define(['N/search', 'N/format'], (search, format) => {
 
         // Line Count
         for (let index = 0; index < ifLineCount; index++) {
+          let expDate = '';
+          let lotNumber = '';
+
           // Item ID
           const itemId = ifRecord.getSublistValue({
             sublistId: 'item',
@@ -62,32 +65,51 @@ define(['N/search', 'N/format'], (search, format) => {
           });
 
           log.debug(loggerTitle, { itemId, location, quantity });
-          //
-          // Find matching lot info from pre-fetched results
-          const matchingLotInfo = itemLotInfo.find(
+
+          // Find all matching lot info from pre-fetched results
+          const matchingLotInfos = itemLotInfo.filter(
             (lot) =>
               lot.itemId == itemId &&
               lot.location == location &&
               lot.quantity == quantity
           );
 
-          if (matchingLotInfo) {
-            // Process matching expiration date here as needed.
-            if (matchingLotInfo.expDate) {
-              const expDate = format.parse({
-                value: matchingLotInfo.expDate,
-                type: format.Type.DATE,
-              });
-              log.debug(loggerTitle, `Found matching exp date: ${expDate}`);
-              ifRecord.setSublistValue({
-                sublistId: 'item',
-                fieldId: 'custcol_vireo_lot_exp_date',
-                line: index,
-                value: expDate,
-              });
-            }
+          if (matchingLotInfos.length > 0) {
+            // Iterate over the matching lots
+            matchingLotInfos.forEach((matchingLotInfo, idx) => {
+              if (matchingLotInfo.expDate) {
+                // Set Expiration Date and Lot Number
+                expDate +=
+                  matchingLotInfo.expDate +
+                  (idx < matchingLotInfos.length - 1 ? ', ' : '');
+                lotNumber +=
+                  matchingLotInfo.lotNumber +
+                  (idx < matchingLotInfos.length - 1 ? ', ' : '');
+
+                log.debug(loggerTitle, `Found matching exp date: ${expDate}`);
+                log.debug(
+                  loggerTitle,
+                  `Found matching Lot Number: ${lotNumber}`
+                );
+              }
+            });
+
+            ifRecord.setSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_exp_date',
+              line: index,
+              value: expDate,
+            });
+
+            ifRecord.setSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_serial_number',
+              line: index,
+              value: lotNumber,
+            });
           }
         }
+
         //
       }
     } catch (error) {
@@ -119,7 +141,7 @@ define(['N/search', 'N/format'], (search, format) => {
         type: 'transaction',
         settings: [{ name: 'consolidationtype', value: 'ACCTTYPE' }],
         filters: [
-          ['internalidnumber', 'equalto', '11296642'],
+          ['internalidnumber', 'equalto', id],
           'AND',
           ['item', 'noneof', '@NONE@'],
           'AND',
@@ -148,6 +170,11 @@ define(['N/search', 'N/format'], (search, format) => {
           }),
           search.createColumn({ name: 'quantity', label: 'Quantity' }),
           search.createColumn({ name: 'location', label: 'Location' }),
+          search.createColumn({
+            name: 'inventorynumber',
+            join: 'inventoryDetail',
+            label: 'Number',
+          }),
         ],
       });
       var searchResultCount = transactionSearchObj.runPaged().count;
@@ -179,6 +206,13 @@ define(['N/search', 'N/format'], (search, format) => {
         resultObj.location = result.getValue({
           name: 'location',
           label: 'Location',
+        });
+
+        // Lot Serial Number
+        resultObj.lotNumber = result.getText({
+          name: 'inventorynumber',
+          join: 'inventoryDetail',
+          label: 'Number',
         });
 
         // Push the result object to results Arr

@@ -16,41 +16,53 @@
 	</#if>
     <macrolist>
         <macro id="nlheader">
-            <table class="header" style="width: 100%; font-size: 10pt;">
-                <tr>
-                    <td rowspan="3">
-                    <#if companyInformation.logoUrl?length != 0>
-                        <@filecabinet nstype="image" style="float: left; margin: 7px" src="${companyInformation.logoUrl}" />
-                    </#if>
-                        <span class="nameandaddress">${companyInformation.companyName}</span><br />
-                        <span class="nameandaddress">${companyInformation.addressText}</span>
-                    </td>
-                    <td align="right"><span class="title">${record@title}</span></td>
-                </tr>
-                <tr>
-                    <td align="right"><span class="number">#${record.tranid}</span></td>
-                </tr>
-                <tr>
-                    <td align="right">${record.trandate}</td>
-                </tr>
-            </table>
+            
+<table class="header" style="width: 100%; font-size: 10pt;"><tr>
+<td><#if subsidiary?? && subsidiary.logo?length != 0> <@filecabinet nstype="image" style="float: left; margin: 7px;" src="${subsidiary.logo@url}" width="200" height="75" /> <#else> <#if companyInformation?? && companyInformation.logoUrl?length != 0> <@filecabinet nstype="image" style="float: left; margin: 7px;" src="${companyInformation.logoUrl}" /> </#if> </#if></td>
+<td style="padding-left: 80px; padding-top: 25px;"><span class="title">${record@title}</span></td>
+</tr>
+<tr>
+<td align="left">${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<span class="nameandaddress"><br />${record.custbody_vireo_subsidiary_name}</span><br /><span class="nameandaddress">${record.custbody_subsidiary_address}</span></td>
+<td style="padding-left: 82px; padding-bottom: 20px;">
+<table style="width: 98.9395%;"><tr>
+<td style="width: 41.4628%;"><strong>Order Date</strong></td>
+<td style="width: 58.5406%;">${record.trandate}</td>
+</tr>
+<tr>
+<td style="padding-top: 10px; padding-right: 15px; width: 41.4628%;"><strong>Order #</strong></td>
+<td style="padding-top: 10px; width: 58.5406%;">${record.createdfrom.tranid}</td>
+</tr>
+<tr>
+<td style="padding-top: 10px; width: 41.4628%;"><strong>Customer Order #</strong></td>
+<td style="padding-top: 10px; width: 58.5406%;">${record.createdfrom.otherrefnum}</td>
+</tr>
+<tr>
+<td style="padding-top: 10px; width: 41.4628%;"><strong>Ship Date</strong></td>
+<td style="padding-top: 10px; width: 58.5406%;">${record.shippeddate}</td>
+</tr>
+<tr>
+<td style="padding-top: 10px; width: 41.4628%;"><strong>Tracking #</strong></td>
+<td style="padding-top: 10px; width: 58.5406%;">${salesorder.linkedtrackingnumbers}</td>
+</tr>
+<tr>
+<td style="padding-top: 10px; width: 41.4628%;"><strong>Ship Via</strong></td>
+<td style="padding-top: 10px; width: 58.5406%;">${record.shipmethod}</td>
+</tr></table>
+</td>
+</tr></table>
+
         </macro>
         <macro id="nlfooter">
-            <table class="footer">
-                <tr>
-                <#if preferences.PRINT_BARCODES>
-                    <td>
-                        <barcode codetype="code128" showtext="true" value="${record.tranid}"/>
-                    </td>
-                </#if>
-                    <td align="right">
-                        <pagenumber/> of <totalpages/>
-                    </td>
-                </tr>
-            </table>
+            
+<table class="footer"><tr><#if preferences.PRINT_BARCODES>
+<td><barcode codetype="code128" showtext="true" value="${record.tranid}"/></td>
+</#if>
+<td align="right"><pagenumber/> of <totalpages/></td>
+</tr></table>
+
         </macro>
     </macrolist>
-<style>
+    <style>
     * {
         <#if .locale == "zh_CN">
             font-family: NotoSans, NotoSansCJKsc, sans-serif;
@@ -66,180 +78,149 @@
             font-family: NotoSans, sans-serif;
         </#if>
     }
-    /* Specific styles for itemtable */
-    table.itemtable {
-        font-size: 9pt; /* Larger font size for item table */
-        border-collapse: collapse;
-        width: 100%;
-    }
-    table.itemtable th, 
-    table.itemtable td {
-        border: 1px solid #333; /* Borders for itemtable cells only */
-        padding: 8px;
-        text-align: left;
-    }
-    table.itemtable th {
-        font-weight: bold;
-        font-size: 10pt;
-        vertical-align: middle;
-        background-color: #4CAF50; /* Background color for item table headers */
-        color: white;
-    }
-    table.itemtable td {
-        font-size: 9pt;
-        padding: 6px 8px;
-    }
-    
-    /* General styles for other tables */
-    table {
-        font-size: 9pt;
-        table-layout: fixed;
-    }
-    th {
-        font-weight: bold;
-        font-size: 10pt;
-        vertical-align: middle;
-        padding: 5px 6px 3px;
-        background-color: #e3e3e3; /* Default background color for other table headers */
-        color: #333333;
-    }
-    td {
-        padding: 4px 6px;
-    }
-    b {
-        font-weight: bold;
-        color: #333333;
-    }
-    table.header td {
-        padding: 0;
-        font-size: 9pt;
-    }
-    table.footer td {
-        padding: 0;
-        font-size: 9pt;
-    }
-    table.body td {
-        padding-top: 2px;
-    }
-    td.addressheader {
-        font-size: 10pt;
-        font-weight: bold;
-        padding-top: 6px;
-        padding-bottom: 2px;
-    }
-    td.address {
-        padding-top: 0;
-    }
-    span.title {
-        font-size: 28pt;
-    }
-    span.number {
-        font-size: 16pt;
-    }
-    span.itemname {
-        font-weight: bold;
-        line-height: 150%;
-    }
-    div.returnform {
-        width: 100%;
-        height: 200pt;
-        page-break-inside: avoid;
-        page-break-after: avoid;
-    }
-    hr {
-        border-top: 1px dashed #d3d3d3;
-        width: 100%;
-        color: #ffffff;
-        background-color: #ffffff;
-        height: 1px;
-    }
+		table {
+			font-size: 9pt;
+			table-layout: fixed;
+		}
+        th {
+            font-weight: bold;
+            font-size: 8pt;
+            vertical-align: middle;
+            padding: 5px 6px 3px;
+            background-color: #e3e3e3;
+            color: #333333;
+        }
+        td {
+            padding: 4px 6px;
+        }
+		td p { align:left }
+        b {
+            font-weight: bold;
+            color: #333333;
+        }
+        table.header td {
+            padding: 0;
+            font-size: 10pt;
+        }
+        table.footer td {
+            padding: 0;
+            font-size: 8pt;
+        }
+        table.itemtable th {
+            padding-bottom: 10px;
+            padding-top: 10px;
+            border: 1px solid #777777;
+          color:#FFFFFF;
+        }
+
+      table.itemtable td {
+         border: 1px solid #777777;
+      }
+
+        table.body td {
+            padding-top: 2px;
+          
+        }
+        td.addressheader {
+            font-size: 8pt;
+            font-weight: bold;
+            padding-top: 6px;
+            padding-bottom: 2px;
+        }
+        td.address {
+            padding-top: 0;
+        }
+        span.title {
+            font-size: 18pt;
+            font-weight: bold;
+        }
+        span.number {
+            font-size: 16pt;
+        }
+        span.itemname {
+            font-weight: bold;
+            line-height: 150%;
+        }
+        div.returnform {
+            width: 100%;
+            /* To ensure minimal height of return form */
+            height: 200pt;
+            page-break-inside: avoid;
+            page-break-after: avoid;
+        }
+        hr {
+            border-top: 1px dashed #d3d3d3;
+            width: 100%;
+            color: #ffffff;
+            background-color: #ffffff;
+            height: 1px;
+        }
 </style>
-
-
 </head>
-<body header="nlheader" header-height="10%" footer="nlfooter" footer-height="20pt" padding="0.5in 0.5in 0.5in 0.5in" size="Letter">
-    <table style="width: 100%; margin-top: 10px;">
-        <tr>
-            <td class="addressheader">${salesorder.shipaddress@label}</td>
-        </tr>
-        <tr>
-            <td class="address">${salesorder.shipaddress}</td>
-        </tr>
-    </table>
-    <table class="body" style="width: 100%; margin-top: 10px;">
-        <tr>
-            <th>${record.trandate@label}</th>
-            <th>${salesorder.linkedtrackingnumbers@label}</th>
-            <th>${record.shipmethod@label}</th>
-            <th>${record.shipphone@label}</th>
-        </tr>
-        <tr>
-            <td>${record.trandate}</td>
-            <td>${salesorder.linkedtrackingnumbers}</td>
-            <td>${record.shipmethod}</td>
-            <td>${record.shipphone}</td>
-        </tr>
-    </table>
-    <#if salesorder.item?has_content>
-    <table class="itemtable" style="width: 100%; margin-top: 10px;">
-        <thead>
-        <tr>
-            <th colspan="5">${salesorder.item[0].item@label}</th>
-            <th colspan="6">Item Description</th>
-            <th colspan="4">Exp.Date</th>
-            <th align="right" colspan="4">Order Qty</th>
-            <th align="right" colspan="4">Shipped Qty</th>
-        </tr>
-        </thead>
-        <#list salesorder.item as tranline>
-            <tr>
-                <td colspan="5">${tranline.item}</td>
-                <td colspan="6">${tranline.description}</td>
-                 <td colspan="4">${tranline.custcol_vireo_lot_exp_date}</td>
-                <td align="right" colspan="4">${tranline.quantityordered}</td>
-                <td align="right" colspan="4">${tranline.quantity}</td>
-            </tr>
-        </#list>
-    </table>
-    </#if>
-    <#if preferences.RETURNFORM && returnForm??>
-    <hr />
-    <div class="returnform">
-        <table style="width: 100%; margin-top: 10px;">
-            <tr>
-                <td><span class="nameandaddress">${record.createdfrom.subsidiary}</span></td>
-                <td align="right"><span class="number">${returnForm@title}</span></td>
-            </tr>
-        </table>
-        <table style="width: 100%; margin-top: 10px;">
-            <tr>
-                <td class="addressheader" colspan="4">${returnForm.returnAddress}</td>
-                <th>${returnForm.rmaNum}</th>
-                <th colspan="2">${returnForm.customerName}</th>
-                <th>${salesorder.tranid@label}</th>
-            </tr>
-            <tr>
-                <td class="address" colspan="4" rowspan="2">&nbsp;</td>
-                <td>&nbsp;</td>
-                <td colspan="2">${salesorder.entity}</td>
-                <td>${salesorder.tranid}</td>
-            </tr>
-            <tr>
-                <td colspan="4">&nbsp;</td>
-            </tr>
-        </table>
-        <table class="itemtable" style="width: 100%; margin-top: 10px;">
-            <thead>
-            <tr>
-                <th colspan="2">${returnForm.item}</th>
-                <th colspan="1">${returnForm.quantity}</th>
-                <th colspan="5">${returnForm.reason}</th>
-            </tr>
-            </thead>
-            <tr>
-                <td colspan="8">&nbsp;</td>
-            </tr>
-        </table>
-    </div></#if>
+<body header="nlheader" header-height="28%" footer="nlfooter" footer-height="20pt" padding="0.5in 0.5in 0.5in 0.5in" size="Letter">
+    <table style="width: 100%; margin-top: 10px;"><tr>
+<td class="addressheader">${salesorder.shipaddress@label}</td>
+</tr>
+<tr>
+<td class="address">${salesorder.shipaddress}</td>
+</tr></table>
+<#if salesorder.item?has_content>
+<table class="itemtable" style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+<thead>
+<tr>
+<th colspan="4">${salesorder.item[0].item@label}</th>
+<th colspan="6">Item Description</th>
+<th colspan="3" align="right">Units</th>
+<th colspan="4">Lot#</th>
+<th colspan="4">Exp.Date</th>
+<th colspan="3" align="right">Order Qty</th>
+<th colspan="3" align="right">Shipped Qty</th>
+</tr>
+</thead>
+<#list salesorder.item as tranline><tr>
+<td colspan="4">${tranline.item}</td>
+<td colspan="6">${tranline.description}</td>
+<td colspan="3" align="right">${tranline.units}</td>
+<td colspan="4">${tranline.custcol_vireo_lot_serial_number}</td>
+<td colspan="4">${tranline.custcol_vireo_lot_exp_date}</td>
+<td colspan="3" align="right">${tranline.quantityordered}</td>
+<td colspan="3" align="right">${tranline.quantity}</td>
+</tr>
+</#list></table>
+</#if> <#if preferences.RETURNFORM && returnForm??><hr />
+<div class="returnform">
+<table style="width: 100%; margin-top: 10px;"><tr>
+<td style="width: 49.5507%;"><strong>${record.custbody_vireo_subsidiary_name}</strong></td>
+<td style="text-align: left; width: 50.5311%;"><strong><span class="number">${returnForm@title}</span></strong></td>
+</tr></table>
+<table style="width: 100%; margin-top: 10px; border-collapse: collapse;"><tr>
+<td style="width: 50.194%;" colspan="4"><strong>Ship Returns To</strong><br />${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<br />${record.custbody_subsidiary_address}</td>
+<td style="width: 49.7712%;">
+<table><tr>
+<td><strong>${returnForm.rmaNum}</strong></td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td><strong>${returnForm.customerName}</strong></td>
+<td>${salesorder.entity}</td>
+</tr>
+<tr>
+<td><strong>${salesorder.tranid@label}</strong></td>
+<td>${salesorder.tranid}</td>
+</tr></table>
+</td>
+</tr></table>
+<table class="itemtable" style="width: 100%; margin-top: 10px;">
+<thead>
+<tr>
+<th colspan="2">${returnForm.item}</th>
+<th colspan="1">${returnForm.quantity}</th>
+<th colspan="5">${returnForm.reason}</th>
+</tr>
+</thead><tr>
+<td colspan="8">&nbsp;</td>
+</tr></table>
+</div>
+</#if>
 </body>
 </pdf>
