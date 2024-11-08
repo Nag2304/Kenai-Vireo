@@ -22,7 +22,7 @@
 <td style="padding-left: 80px; padding-top: 25px;"><span class="title">${record@title}</span></td>
 </tr>
 <tr>
-<td align="left">${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<span class="nameandaddress"><br />${record.custbody_vireo_subsidiary_name}</span><br /><span class="nameandaddress">${record.custbody_subsidiary_address}</span></td>
+<td align="left">${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<span class="nameandaddress"><br />${record.custbody_vireo_subsidiary_name}</span><br /><span class="nameandaddress">${record.custbody_vireo_subsidiary_address}</span></td>
 <td style="padding-left: 82px; padding-bottom: 20px;">
 <table style="width: 98.9395%;"><tr>
 <td style="width: 41.4628%;"><strong>Order Date</strong></td>
@@ -34,7 +34,13 @@
 </tr>
 <tr>
 <td style="padding-top: 10px; width: 41.4628%;"><strong>Customer Order #</strong></td>
-<td style="padding-top: 10px; width: 58.5406%;">${record.createdfrom.otherrefnum}</td>
+<td style="padding-top: 10px; width: 58.5406%;">
+  <#if record.createdfrom.type == "Transfer Order">
+    ${record.createdfrom.tranid}
+  <#else>
+    ${record.createdfrom.otherrefnum}
+  </#if>
+</td>
 </tr>
 <tr>
 <td style="padding-top: 10px; width: 41.4628%;"><strong>Ship Date</strong></td>
@@ -53,6 +59,43 @@
 
         </macro>
         <macro id="nlfooter">
+           <#if preferences.RETURNFORM && returnForm??><hr />
+<div class="returnform">
+<table style="width: 100%; margin-top: 10px;"><tr>
+<td style="width: 49.5507%;"><strong>${record.custbody_vireo_subsidiary_name}</strong></td>
+<td style="text-align: left; width: 50.5311%;"><strong><span class="number">${returnForm@title}</span></strong></td>
+</tr></table>
+<table style="width: 100%; margin-top: 10px; border-collapse: collapse;"><tr>
+<td style="width: 50.194%;" colspan="4"><strong>Ship Returns To</strong><br />${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<br />${record.custbody_subsidiary_address}</td>
+<td style="width: 49.7712%;">
+<table><tr>
+<td><strong>${returnForm.rmaNum}</strong></td>
+<td>&nbsp;</td>
+</tr>
+<tr>
+<td><strong>${returnForm.customerName}</strong></td>
+<td>${salesorder.entity}</td>
+</tr>
+<tr>
+<td><strong>${salesorder.tranid@label}</strong></td>
+<td>${salesorder.tranid}</td>
+</tr></table>
+</td>
+</tr></table>
+<table class="itemtable" style="width: 100%; margin-top: 10px;">
+<thead>
+<tr>
+<th colspan="2">${returnForm.item}</th>
+<th colspan="1">${returnForm.quantity}</th>
+<th colspan="5">${returnForm.reason}</th>
+</tr>
+</thead><tr>
+<td colspan="2">&nbsp;</td>
+<td colspan="1">&nbsp;</td>
+<td colspan="5">&nbsp;</td>
+</tr></table>
+</div>
+</#if>
             
 <table class="footer"><tr><#if preferences.PRINT_BARCODES>
 <td><barcode codetype="code128" showtext="true" value="${record.tranid}"/></td>
@@ -157,7 +200,7 @@
         }
 </style>
 </head>
-<body header="nlheader" header-height="28%" footer="nlfooter" footer-height="20pt" padding="0.5in 0.5in 0.5in 0.5in" size="Letter">
+<body header="nlheader" header-height="28%" footer="nlfooter" footer-height="220pt" padding="0.5in 0.5in 0.5in 0.5in" size="Letter">
     <table style="width: 100%; margin-top: 10px;"><tr>
 <td class="addressheader">${salesorder.shipaddress@label}</td>
 </tr>
@@ -187,40 +230,6 @@
 <td colspan="3" align="right">${tranline.quantity}</td>
 </tr>
 </#list></table>
-</#if> <#if preferences.RETURNFORM && returnForm??><hr />
-<div class="returnform">
-<table style="width: 100%; margin-top: 10px;"><tr>
-<td style="width: 49.5507%;"><strong>${record.custbody_vireo_subsidiary_name}</strong></td>
-<td style="text-align: left; width: 50.5311%;"><strong><span class="number">${returnForm@title}</span></strong></td>
-</tr></table>
-<table style="width: 100%; margin-top: 10px; border-collapse: collapse;"><tr>
-<td style="width: 50.194%;" colspan="4"><strong>Ship Returns To</strong><br />${record.custbody_atlas_hb_std_salesorderloc.name?substring(record.custbody_atlas_hb_std_salesorderloc.name?last_index_of('-') + 1)}&nbsp;${record.custbody_atlas_hb_std_salesorderloc.locationtype}<br />${record.custbody_subsidiary_address}</td>
-<td style="width: 49.7712%;">
-<table><tr>
-<td><strong>${returnForm.rmaNum}</strong></td>
-<td>&nbsp;</td>
-</tr>
-<tr>
-<td><strong>${returnForm.customerName}</strong></td>
-<td>${salesorder.entity}</td>
-</tr>
-<tr>
-<td><strong>${salesorder.tranid@label}</strong></td>
-<td>${salesorder.tranid}</td>
-</tr></table>
-</td>
-</tr></table>
-<table class="itemtable" style="width: 100%; margin-top: 10px;">
-<thead>
-<tr>
-<th colspan="2">${returnForm.item}</th>
-<th colspan="1">${returnForm.quantity}</th>
-<th colspan="5">${returnForm.reason}</th>
-</tr>
-</thead><tr>
-<td colspan="8">&nbsp;</td>
-</tr></table>
-</div>
 </#if>
 </body>
 </pdf>
