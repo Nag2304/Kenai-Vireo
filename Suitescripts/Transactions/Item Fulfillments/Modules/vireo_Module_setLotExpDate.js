@@ -3,143 +3,154 @@
  * @NModuleScope SameAccount
  */
 
-/**
- * File name: vireo_Module_setLotExpDate.js
- * Author           Date       Version               Remarks
- * nagendrababu  20th Aug 2024  1.00        Initial creation of the script
- */
+/*global define,log*/
 
-/* global define,log */
-
-define(['N/search', 'N/format'], (search, format) => {
-  /* ------------------------ Global Variables - Begin ------------------------ */
+define(['N/search', 'N/record'], (search, record) => {
   const exports = {};
-  /* ------------------------- Global Variables - End ------------------------- */
-  //
-  /* ------------------------ Set Lot Exp Date - Begin ------------------------ */
-  const setLotExpDate = (scriptContext) => {
-    const loggerTitle = 'Set Lot Exp Date';
-    log.debug(
-      loggerTitle,
-      '|>-------------------' + loggerTitle + ' -Entry-------------------<|'
-    );
+
+  /**
+   * Function to handle setting Lot Expiration Date during EDIT.
+   */
+  const setLotExpDateBeforeSubmit = (scriptContext) => {
+    log.debug('setLotExpDateBeforeSubmit Triggered');
+    handleLotExpDateLogic(scriptContext, false);
+  };
+
+  /**
+   * Function to handle setting Lot Expiration Date after initial save (CREATE).
+   */
+  const setLotExpDateAfterSubmit = (scriptContext) => {
+    log.debug('setLotExpDateAfterSubmit Triggered');
+    const ifRecord = record.load({
+      type: scriptContext.newRecord.type,
+      id: scriptContext.newRecord.id,
+      isDynamic: true, // Load in dynamic mode
+    });
+    handleLotExpDateLogic({ newRecord: ifRecord }, true);
+
+    // Explicitly save the record after making changes
+    ifRecord.save({
+      enableSourcing: true,
+      ignoreMandatoryFields: true,
+    });
+
+    log.debug('Record Saved after modifications');
+  };
+
+  const handleLotExpDateLogic = (scriptContext, isDynamic) => {
+    log.debug('handleLotExpDateLogic Triggered', `Dynamic Mode: ${isDynamic}`);
     try {
-      if (
-        scriptContext.type === scriptContext.UserEventType.CREATE ||
-        scriptContext.type === scriptContext.UserEventType.EDIT
-      ) {
-        const ifRecord = scriptContext.newRecord;
-        //
-        const ifRecordInternalId = ifRecord.id;
+      const ifRecord = scriptContext.newRecord;
+      const ifLineCount = ifRecord.getLineCount({ sublistId: 'item' });
+      log.debug('Number of Lines', ifLineCount);
 
-        // Retrieve Item Inventory Details
-        const itemLotInfo = retrieveItemInventoryDetails(ifRecordInternalId);
-        //
+      const itemLotInfo = retrieveItemInventoryDetails(ifRecord.id);
+      log.debug('Item Lot Info Retrieved', itemLotInfo);
 
-        const ifLineCount = ifRecord.getLineCount({ sublistId: 'item' });
+      for (let index = 0; index < ifLineCount; index++) {
+        let expDate = '';
+        let lotNumber = '';
+        let quantites = '';
 
-        // Line Count
-        for (let index = 0; index < ifLineCount; index++) {
-          let expDate = '';
-          let lotNumber = '';
+        const itemId = ifRecord.getSublistValue({
+          sublistId: 'item',
+          fieldId: 'item',
+          line: index,
+        });
+        const location = ifRecord.getSublistValue({
+          sublistId: 'item',
+          fieldId: 'location',
+          line: index,
+        });
+        const quantity = ifRecord.getSublistValue({
+          sublistId: 'item',
+          fieldId: 'quantity',
+          line: index,
+        });
 
-          // Item ID
-          const itemId = ifRecord.getSublistValue({
-            sublistId: 'item',
-            fieldId: 'item',
-            line: index,
+        log.debug('Line Info', { itemId, location, quantity });
+
+        const matchingLotInfos = itemLotInfo.filter(
+          (lot) =>
+            lot.itemId == itemId &&
+            lot.location == location &&
+            lot.quantity == quantity
+        );
+        log.debug('Matching Lot Infos', matchingLotInfos);
+
+        if (matchingLotInfos.length > 0) {
+          matchingLotInfos.forEach((matchingLotInfo, idx) => {
+            if (matchingLotInfo.expDate) {
+              expDate +=
+                matchingLotInfo.expDate +
+                (idx < matchingLotInfos.length - 1 ? ', ' : '');
+              lotNumber +=
+                matchingLotInfo.lotNumber +
+                (idx < matchingLotInfos.length - 1 ? ', ' : '');
+              quantites +=
+                matchingLotInfo.lotQuantity +
+                (idx < matchingLotInfos.length - 1 ? ', ' : '');
+            }
           });
 
-          // Location
-          const location = ifRecord.getSublistValue({
-            sublistId: 'item',
-            fieldId: 'location',
-            line: index,
-          });
-
-          // Quantity
-          const quantity = ifRecord.getSublistValue({
-            sublistId: 'item',
-            fieldId: 'quantity',
-            line: index,
-          });
-
-          log.debug(loggerTitle, { itemId, location, quantity });
-
-          // Find all matching lot info from pre-fetched results
-          const matchingLotInfos = itemLotInfo.filter(
-            (lot) =>
-              lot.itemId == itemId &&
-              lot.location == location &&
-              lot.quantity == quantity
-          );
-
-          if (matchingLotInfos.length > 0) {
-            // Iterate over the matching lots
-            matchingLotInfos.forEach((matchingLotInfo, idx) => {
-              if (matchingLotInfo.expDate) {
-                // Set Expiration Date and Lot Number
-                expDate +=
-                  matchingLotInfo.expDate +
-                  (idx < matchingLotInfos.length - 1 ? ', ' : '');
-                lotNumber +=
-                  matchingLotInfo.lotNumber +
-                  (idx < matchingLotInfos.length - 1 ? ', ' : '');
-
-                log.debug(loggerTitle, `Found matching exp date: ${expDate}`);
-                log.debug(
-                  loggerTitle,
-                  `Found matching Lot Number: ${lotNumber}`
-                );
-              }
+          if (isDynamic) {
+            ifRecord.selectLine({ sublistId: 'item', line: index });
+            ifRecord.setCurrentSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_exp_date',
+              value: expDate,
             });
-
+            ifRecord.setCurrentSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_serial_number',
+              value: lotNumber,
+            });
+            ifRecord.setCurrentSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_quantities',
+              value: quantites,
+            });
+            ifRecord.commitLine({ sublistId: 'item' });
+            log.debug('Committed Line in Dynamic Mode', {
+              expDate,
+              lotNumber,
+              quantites,
+            });
+          } else {
             ifRecord.setSublistValue({
               sublistId: 'item',
               fieldId: 'custcol_vireo_lot_exp_date',
               line: index,
               value: expDate,
             });
-
             ifRecord.setSublistValue({
               sublistId: 'item',
               fieldId: 'custcol_vireo_lot_serial_number',
               line: index,
               value: lotNumber,
             });
+            ifRecord.setSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_quantities',
+              line: index,
+              value: quantites,
+            });
           }
-        }
 
-        //
+          log.debug('Values Set', { expDate, lotNumber, quantites });
+        }
       }
     } catch (error) {
-      log.error(loggerTitle + ' caught an exception', error);
+      log.error('handleLotExpDateLogic caught an exception', error);
     }
-    //
-    log.debug(
-      loggerTitle,
-      '|>-------------------' + loggerTitle + ' -Exit-------------------<|'
-    );
   };
-  /* ------------------------- Set Lot Exp Date - End ------------------------- */
-  //
-  /* ------------------------ Helper Functions - Begin ------------------------ */
-  //
-  /* *********************** Retrieve Item Inventory Details - Begin *********************** */
-  /**
-   *
-   * @param {Number} id
-   * @returns {Array} resultsArr
-   */
+
   const retrieveItemInventoryDetails = (id) => {
-    const loggerTitle = 'Retrieve Item Inventory Details';
-    log.debug(loggerTitle, '|>--------' + loggerTitle + ' -Entry--------<|');
-    //
+    log.debug('retrieveItemInventoryDetails Triggered');
     const resultsArr = [];
     try {
       var transactionSearchObj = search.create({
         type: 'transaction',
-        settings: [{ name: 'consolidationtype', value: 'ACCTTYPE' }],
         filters: [
           ['internalidnumber', 'equalto', id],
           'AND',
@@ -156,12 +167,7 @@ define(['N/search', 'N/format'], (search, format) => {
           search.createColumn({
             name: 'inventorynumber',
             join: 'inventoryDetail',
-            label: ' Number',
-          }),
-          search.createColumn({
-            name: 'internalid',
-            join: 'inventoryDetail',
-            label: 'Internal ID',
+            label: 'Number',
           }),
           search.createColumn({
             name: 'item',
@@ -171,70 +177,43 @@ define(['N/search', 'N/format'], (search, format) => {
           search.createColumn({ name: 'quantity', label: 'Quantity' }),
           search.createColumn({ name: 'location', label: 'Location' }),
           search.createColumn({
-            name: 'inventorynumber',
+            name: 'quantity',
             join: 'inventoryDetail',
-            label: 'Number',
+            label: 'Item',
           }),
         ],
       });
-      var searchResultCount = transactionSearchObj.runPaged().count;
-      log.debug('transactionSearchObj result count', searchResultCount);
+
       transactionSearchObj.run().each((result) => {
-        const resultObj = {};
-
-        // Item ID
-        resultObj.itemId = result.getValue({
-          name: 'item',
-          join: 'inventoryDetail',
-          label: 'Item',
-        });
-
-        // Expiration Date
-        resultObj.expDate = result.getValue({
-          name: 'expirationdate',
-          join: 'inventoryDetail',
-          label: 'Expiration Date',
-        });
-
-        // Quantity
-        resultObj.quantity = result.getValue({
-          name: 'quantity',
-          label: 'Quantity',
-        });
-
-        // Location
-        resultObj.location = result.getValue({
-          name: 'location',
-          label: 'Location',
-        });
-
-        // Lot Serial Number
-        resultObj.lotNumber = result.getText({
-          name: 'inventorynumber',
-          join: 'inventoryDetail',
-          label: 'Number',
-        });
-
-        // Push the result object to results Arr
-        resultsArr.push(resultObj);
-
+        const lotInfo = {
+          itemId: result.getValue({ name: 'item', join: 'inventoryDetail' }),
+          expDate: result.getValue({
+            name: 'expirationdate',
+            join: 'inventoryDetail',
+          }),
+          quantity: result.getValue({ name: 'quantity' }),
+          location: result.getValue({ name: 'location' }),
+          lotNumber: result.getText({
+            name: 'inventorynumber',
+            join: 'inventoryDetail',
+          }),
+          lotQuantity: result.getValue({
+            name: 'quantity',
+            join: 'inventoryDetail',
+          }),
+        };
+        resultsArr.push(lotInfo);
+        log.debug('Lot Info', lotInfo);
         return true;
       });
-      //
-      log.debug(loggerTitle + ' Results Array ', resultsArr);
     } catch (error) {
-      log.error(loggerTitle + ' caught an exception', error);
+      log.error('retrieveItemInventoryDetails caught an exception', error);
     }
-    //
-    log.debug(loggerTitle, '|>--------' + loggerTitle + ' -Exit--------<|');
     return resultsArr;
   };
-  /* *********************** Retrieve Item Inventory Details - End *********************** */
-  //
-  /* ------------------------ Helper Functions - End ------------------------ */
-  //
-  /* ------------------------------ Exports Begin ----------------------------- */
-  exports.beforeSubmit = setLotExpDate;
+
+  exports.beforeSubmit = setLotExpDateBeforeSubmit;
+  exports.afterSubmit = setLotExpDateAfterSubmit;
+
   return exports;
-  /* ------------------------------- Exports End ------------------------------ */
 });
