@@ -36,8 +36,6 @@ define(['N/search', 'N/record'], (search, record) => {
         ['transaction.mainline', 'is', 'T'],
         'AND',
         ['action', 'anyof', 'AUTOMATIC'],
-        'AND',
-        ['nextdate', 'on', '04/30/2025'],
       ],
       columns: [
         search.createColumn({
@@ -48,6 +46,7 @@ define(['N/search', 'N/record'], (search, record) => {
         search.createColumn({ name: 'name', label: 'Name' }),
         search.createColumn({ name: 'action', label: 'Action' }),
         search.createColumn({ name: 'timeperiod', label: 'Time Period' }),
+        search.createColumn({ name: 'repeatevery', label: 'Repeat Every' }),
         search.createColumn({
           name: 'numberremaining',
           label: 'Number Remaining',
