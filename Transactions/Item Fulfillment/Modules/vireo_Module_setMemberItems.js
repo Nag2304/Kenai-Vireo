@@ -17,7 +17,7 @@
 
 /* global define,log */
 
-define(['N/search', 'N/record'], (search, record) => {
+define(['N/search'], (search) => {
   /* ------------------------ Global Variables - Begin ------------------------ */
   const exports = {};
   /* ------------------------- Global Variables - End ------------------------- */
@@ -64,22 +64,28 @@ define(['N/search', 'N/record'], (search, record) => {
         });
 
         if (itemType === 'Kit') {
+          const itemId = itemFulfillment.getSublistValue({
+            sublistId: 'item',
+            fieldId: 'item',
+            line: i,
+          });
+          const quantity =
+            parseFloat(
+              itemFulfillment.getSublistValue({
+                sublistId: 'item',
+                fieldId: 'quantity',
+                line: i,
+              })
+            ) || 0;
           kitItems.push({
-            itemId: itemFulfillment.getSublistValue({
-              sublistId: 'item',
-              fieldId: 'item',
-              line: i,
-            }),
-            quantity:
-              parseFloat(
-                itemFulfillment.getSublistValue({
-                  sublistId: 'item',
-                  fieldId: 'quantity',
-                  line: i,
-                })
-              ) || 0,
+            itemId,
+            quantity,
             lineIndex: i, // Store line index for accurate updates
           });
+          log.debug(
+            loggerTitle,
+            `Collected Kit item at line ${i}: itemId=${itemId}, quantity=${quantity}`
+          );
         }
       }
       log.debug(
@@ -113,18 +119,18 @@ define(['N/search', 'N/record'], (search, record) => {
         });
 
         // Step 5: Update the custom column with a JSON array of all member items
+        let jsonValue = '';
         if (kitItemDetails.length > 0) {
+          jsonValue = JSON.stringify(kitItemDetails, null, 2); // Pretty-print JSON array
           itemFulfillment.setSublistValue({
             sublistId: 'item',
             fieldId: 'custcol_vireo_memberitems',
             line: lineIndex,
-            value: JSON.stringify(kitItemDetails, null, 2), // Pretty-print JSON array
+            value: jsonValue,
           });
           log.debug(
             loggerTitle,
-            `Set custcol_vireo_memberitems for line ${lineIndex} (itemId ${itemId}): ${JSON.stringify(
-              kitItemDetails
-            )}`
+            `Set custcol_vireo_memberitems for line ${lineIndex} (itemId ${itemId}): ${jsonValue}`
           );
         } else {
           log.debug(
@@ -132,6 +138,13 @@ define(['N/search', 'N/record'], (search, record) => {
             `No member items found for itemId ${itemId} on line ${lineIndex}`
           );
         }
+        // Log the raw value to debug potential invalid JSON
+        log.debug(
+          loggerTitle,
+          `Raw custcol_vireo_memberitems value for line ${lineIndex}: ${
+            jsonValue || 'empty'
+          }`
+        );
       });
       /* --------------- Process Kit Member Items - End --------------- */
     } catch (error) {
@@ -202,14 +215,23 @@ define(['N/search', 'N/record'], (search, record) => {
         const itemId = result.getValue({ name: 'internalid' });
         if (!results[itemId]) results[itemId] = [];
 
+        const name =
+          result.getValue({ name: 'itemid', join: 'memberItem' }) || '';
+        const description =
+          result.getValue({ name: 'salesdescription', join: 'memberItem' }) ||
+          '';
+        const memberQuantity =
+          parseFloat(result.getValue({ name: 'memberquantity' })) || 0;
+
         results[itemId].push({
-          name: result.getValue({ name: 'itemid', join: 'memberItem' }) || '',
-          description:
-            result.getValue({ name: 'salesdescription', join: 'memberItem' }) ||
-            '',
-          memberQuantity:
-            parseFloat(result.getValue({ name: 'memberquantity' })) || 0,
+          name,
+          description,
+          memberQuantity,
         });
+        log.debug(
+          loggerTitle,
+          `Processed member item for itemId ${itemId}: name=${name}, description=${description}, memberQuantity=${memberQuantity}`
+        );
 
         return true; // Continue processing remaining results
       });
