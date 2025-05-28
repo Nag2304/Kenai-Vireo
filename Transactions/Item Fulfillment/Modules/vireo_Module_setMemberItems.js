@@ -7,12 +7,11 @@
  * File name: vireo_Module_setMemberItems.js
  * Author           Date       Version               Remarks
  * nagendrababu  05.11.2025     1.00           Initial creation of the script
- *
  */
 
 /**
- * User Event Script to populate Kit member items in JSON format on the Item Fulfillment record's custom column 'custcol_vireo_memberitems'.
- * Executes on create or edit events, retrieves kit member details via a single search, and stores all member items in a JSON array.
+ * User Event Script to populate Kit member items on the Item Fulfillment record.
+ * Stores member item details in custcol_vireo_memberitems as pipe-delimited strings (names|descriptions|quantities).
  */
 
 /* global define,log */
@@ -24,7 +23,7 @@ define(['N/search'], (search) => {
   //
   /* ---------------------- Set Kit Member Items - Begin ---------------------- */
   /**
-   * Handles the beforeSubmit event to populate the custom column with Kit member item details.
+   * Handles the beforeSubmit event to populate custom columns with Kit member item details.
    * @param {Object} context - The script context object.
    * @param {string} context.type - The event type (create, edit, etc.).
    * @param {record.Record} context.newRecord - The current record being processed.
@@ -52,16 +51,22 @@ define(['N/search'], (search) => {
       // Initialize variables
       const itemFulfillment = context.newRecord;
       const lineCount = itemFulfillment.getLineCount({ sublistId: 'item' });
+      log.debug(loggerTitle, `Line count: ${lineCount}`);
+      if (lineCount <= 0) {
+        log.debug(loggerTitle, 'No line items found. Exiting.');
+        return;
+      }
+
       const kitItems = [];
 
       /* ---------------- Collect Kit Items - Begin ---------------- */
-      // Step 1: Iterate through line items to collect Kit item IDs and details
       for (let i = 0; i < lineCount; i++) {
         const itemType = itemFulfillment.getSublistValue({
           sublistId: 'item',
           fieldId: 'itemtype',
           line: i,
         });
+        log.debug(loggerTitle, `Line ${i}: itemType=${itemType}`);
 
         if (itemType === 'Kit') {
           const itemId = itemFulfillment.getSublistValue({
@@ -77,10 +82,14 @@ define(['N/search'], (search) => {
                 line: i,
               })
             ) || 0;
+          if (!itemId) {
+            log.error(loggerTitle, `Line ${i}: Missing itemId for kit item. Skipping.`);
+            continue;
+          }
           kitItems.push({
             itemId,
             quantity,
-            lineIndex: i, // Store line index for accurate updates
+            lineIndex: i,
           });
           log.debug(
             loggerTitle,
@@ -92,59 +101,79 @@ define(['N/search'], (search) => {
         loggerTitle,
         `Collected Kit items: ${JSON.stringify(kitItems)}`
       );
+      if (kitItems.length === 0) {
+        log.debug(loggerTitle, 'No kit items found. Exiting.');
+        return;
+      }
       /* ----------------- Collect Kit Items - End ----------------- */
 
       /* -------------- Process Kit Member Items - Begin -------------- */
-      // Step 2: Retrieve member items for all Kit items in a single search
       const itemIds = kitItems.map((item) => item.itemId);
+      log.debug(loggerTitle, `Item IDs for search: ${itemIds}`);
       const memberItemsMap = searchKitMemberItems(itemIds);
       log.debug(
         loggerTitle,
         `Member items map: ${JSON.stringify(memberItemsMap)}`
       );
 
-      // Step 3: Process each Kit item and collect all member items
       kitItems.forEach(({ itemId, quantity, lineIndex }) => {
         const memberItems = memberItemsMap[itemId] || [];
-        const kitItemDetails = [];
-
-        // Step 4: Collect all member items for the Kit
-        memberItems.forEach(({ name, description, memberQuantity }) => {
-          const totalQuantity = quantity * memberQuantity;
-          kitItemDetails.push({
-            name,
-            description,
-            quantity: totalQuantity,
-          });
-        });
-
-        // Step 5: Update the custom column with a JSON array of all member items
-        let jsonValue = '';
-        if (kitItemDetails.length > 0) {
-          jsonValue = JSON.stringify(kitItemDetails, null, 2); // Pretty-print JSON array
+        log.debug(loggerTitle, `Line ${lineIndex}: Member items for itemId ${itemId}: ${JSON.stringify(memberItems)}`);
+        if (memberItems.length === 0) {
+          log.debug(loggerTitle, `Line ${lineIndex}: No member items found for itemId ${itemId}. Setting empty value.`);
           itemFulfillment.setSublistValue({
             sublistId: 'item',
             fieldId: 'custcol_vireo_memberitems',
             line: lineIndex,
-            value: jsonValue,
+            value: '||', // Empty pipe-delimited string
+          });
+          return;
+        }
+
+        const names = [];
+        const descriptions = [];
+        const quantities = [];
+
+        // Collect member items into arrays
+        memberItems.forEach(({ name, description, memberQuantity }) => {
+          const sanitizedName = (name || '').replace(/[<>]/g, (match) =>
+            match === '<' ? '\\u003C' : '\\u003E'
+          );
+          const sanitizedDescription = (description || '').replace(/[<>]/g, (match) =>
+            match === '<' ? '\\u003C' : '\\u003E'
+          );
+          const totalQuantity = quantity * memberQuantity;
+          names.push(sanitizedName);
+          descriptions.push(sanitizedDescription);
+          quantities.push(totalQuantity);
+        });
+
+        // Convert arrays to pipe-delimited strings
+        const namesString = names.join('|');
+        const descriptionsString = descriptions.join('|');
+        const quantitiesString = quantities.join('|');
+
+        // Combine into a single pipe-delimited string: names|descriptions|quantities
+        const combinedString = `${namesString}|${descriptionsString}|${quantitiesString}`;
+
+        // Set the custom column
+        try {
+          itemFulfillment.setSublistValue({
+            sublistId: 'item',
+            fieldId: 'custcol_vireo_memberitems',
+            line: lineIndex,
+            value: combinedString,
           });
           log.debug(
             loggerTitle,
-            `Set custcol_vireo_memberitems for line ${lineIndex} (itemId ${itemId}): ${jsonValue}`
+            `Set member items for line ${lineIndex} (itemId ${itemId}): ${combinedString}`
           );
-        } else {
-          log.debug(
+        } catch (setError) {
+          log.error(
             loggerTitle,
-            `No member items found for itemId ${itemId} on line ${lineIndex}`
+            `Line ${lineIndex}: Failed to set custcol_vireo_memberitems for itemId ${itemId}: ${setError.message}`
           );
         }
-        // Log the raw value to debug potential invalid JSON
-        log.debug(
-          loggerTitle,
-          `Raw custcol_vireo_memberitems value for line ${lineIndex}: ${
-            jsonValue || 'empty'
-          }`
-        );
       });
       /* --------------- Process Kit Member Items - End --------------- */
     } catch (error) {
@@ -172,12 +201,12 @@ define(['N/search'], (search) => {
       `|>------------------${loggerTitle}- Entry------------------<|`
     );
     const results = {};
-    log.debug(loggerTitle + ' Item Ids', itemIds);
+    log.debug(loggerTitle, `Item IDs: ${itemIds}`);
     try {
       if (!itemIds || itemIds.length === 0) {
         log.debug(
           loggerTitle,
-          `|>------------------${loggerTitle}- Exit------------------<|`
+          'No item IDs provided. Exiting.'
         );
         return results;
       }
@@ -196,12 +225,12 @@ define(['N/search'], (search) => {
           }),
           search.createColumn({
             name: 'itemid',
-            join: 'memberItem',
+            join: 'memberitem',
             label: 'Name',
           }),
           search.createColumn({
             name: 'salesdescription',
-            join: 'memberItem',
+            join: 'memberitem',
             label: 'Description',
           }),
           search.createColumn({
@@ -211,14 +240,15 @@ define(['N/search'], (search) => {
         ],
       });
 
+      let resultCount = 0;
       kitSearch.run().each((result) => {
         const itemId = result.getValue({ name: 'internalid' });
         if (!results[itemId]) results[itemId] = [];
 
         const name =
-          result.getValue({ name: 'itemid', join: 'memberItem' }) || '';
+          result.getValue({ name: 'itemid', join: 'memberitem' }) || '';
         const description =
-          result.getValue({ name: 'salesdescription', join: 'memberItem' }) ||
+          result.getValue({ name: 'salesdescription', join: 'memberitem' }) ||
           '';
         const memberQuantity =
           parseFloat(result.getValue({ name: 'memberquantity' })) || 0;
@@ -233,10 +263,12 @@ define(['N/search'], (search) => {
           `Processed member item for itemId ${itemId}: name=${name}, description=${description}, memberQuantity=${memberQuantity}`
         );
 
-        return true; // Continue processing remaining results
+        resultCount++;
+        return true;
       });
 
-      log.debug(`${loggerTitle} results `, results);
+      log.debug(loggerTitle, `Total member items processed: ${resultCount}`);
+      log.debug(loggerTitle, `Search results: ${JSON.stringify(results)}`);
     } catch (error) {
       log.error(`${loggerTitle} caught with an exception`, error);
     }
