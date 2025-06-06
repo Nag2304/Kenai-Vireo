@@ -3,6 +3,8 @@
  * @NModuleScope SameAccount
  */
 
+/*global define,log*/
+
 define(['N/search', 'N/record'], (search, record) => {
   const exports = {};
 
@@ -48,6 +50,7 @@ define(['N/search', 'N/record'], (search, record) => {
       for (let index = 0; index < ifLineCount; index++) {
         let expDate = '';
         let lotNumber = '';
+        let quantites = '';
 
         const itemId = ifRecord.getSublistValue({
           sublistId: 'item',
@@ -84,11 +87,16 @@ define(['N/search', 'N/record'], (search, record) => {
               lotNumber +=
                 matchingLotInfo.lotNumber +
                 (idx < matchingLotInfos.length - 1 ? ', ' : '');
+              quantites +=
+                matchingLotInfo.lotQuantity +
+                (idx < matchingLotInfos.length - 1 ? ', ' : '');
             }
           });
 
           if (isDynamic) {
-            ifRecord.selectLine({ sublistId: 'item', line: index });
+            log.debug('Handle Lot Exp Logic', 'Idex: ' + index);
+            var x = index - 1;
+            ifRecord.selectLine({ sublistId: 'item', line: x });
             ifRecord.setCurrentSublistValue({
               sublistId: 'item',
               fieldId: 'custcol_vireo_lot_exp_date',
@@ -99,8 +107,17 @@ define(['N/search', 'N/record'], (search, record) => {
               fieldId: 'custcol_vireo_lot_serial_number',
               value: lotNumber,
             });
+            ifRecord.setCurrentSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_quantities',
+              value: quantites,
+            });
             ifRecord.commitLine({ sublistId: 'item' });
-            log.debug('Committed Line in Dynamic Mode', { expDate, lotNumber });
+            log.debug('Committed Line in Dynamic Mode', {
+              expDate,
+              lotNumber,
+              quantites,
+            });
           } else {
             ifRecord.setSublistValue({
               sublistId: 'item',
@@ -114,9 +131,15 @@ define(['N/search', 'N/record'], (search, record) => {
               line: index,
               value: lotNumber,
             });
+            ifRecord.setSublistValue({
+              sublistId: 'item',
+              fieldId: 'custcol_vireo_lot_quantities',
+              line: index,
+              value: quantites,
+            });
           }
 
-          log.debug('Values Set', { expDate, lotNumber });
+          log.debug('Values Set', { expDate, lotNumber, quantites });
         }
       }
     } catch (error) {
@@ -155,6 +178,11 @@ define(['N/search', 'N/record'], (search, record) => {
           }),
           search.createColumn({ name: 'quantity', label: 'Quantity' }),
           search.createColumn({ name: 'location', label: 'Location' }),
+          search.createColumn({
+            name: 'quantity',
+            join: 'inventoryDetail',
+            label: 'Item',
+          }),
         ],
       });
 
@@ -169,6 +197,10 @@ define(['N/search', 'N/record'], (search, record) => {
           location: result.getValue({ name: 'location' }),
           lotNumber: result.getText({
             name: 'inventorynumber',
+            join: 'inventoryDetail',
+          }),
+          lotQuantity: result.getValue({
+            name: 'quantity',
             join: 'inventoryDetail',
           }),
         };

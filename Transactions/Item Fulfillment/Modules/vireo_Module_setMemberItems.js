@@ -108,6 +108,11 @@ define(['N/search'], (search) => {
       if (kitItems.length === 0) {
         log.debug(loggerTitle, 'No kit items found. Exiting.');
         return;
+      } else {
+        itemFulfillment.setValue({
+          fieldId: 'custbody_vireo_has_kit_item_members',
+          value: true,
+        });
       }
       /* ----------------- Collect Kit Items - End ----------------- */
 
