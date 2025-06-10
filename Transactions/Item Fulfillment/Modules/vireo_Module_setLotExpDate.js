@@ -94,9 +94,7 @@ define(['N/search', 'N/record'], (search, record) => {
           });
 
           if (isDynamic) {
-            log.debug('Handle Lot Exp Logic', 'Idex: ' + index);
-            var x = index - 1;
-            ifRecord.selectLine({ sublistId: 'item', line: x });
+            ifRecord.selectLine({ sublistId: 'item', line: index });
             ifRecord.setCurrentSublistValue({
               sublistId: 'item',
               fieldId: 'custcol_vireo_lot_exp_date',
