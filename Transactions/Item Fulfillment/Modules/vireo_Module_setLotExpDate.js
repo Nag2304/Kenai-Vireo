@@ -1,6 +1,12 @@
 /**
- * @NApiVersion 2.x
+ * @NApiVersion 2.1
  * @NModuleScope SameAccount
+ */
+
+/**
+ * File name: vireo_Module_setLotExpDate.js
+ * Author           Date       Version               Remarks
+ * nagendrababu   06.12.2025    1.00           Initial creation of the script
  */
 
 /*global define,log*/
@@ -41,6 +47,11 @@ define(['N/search', 'N/record'], (search, record) => {
     log.debug('handleLotExpDateLogic Triggered', `Dynamic Mode: ${isDynamic}`);
     try {
       const ifRecord = scriptContext.newRecord;
+
+      const hasKitMembers = ifRecord.getValue({
+        fieldId: 'custbody_vireo_has_kit_item_members',
+      });
+
       const ifLineCount = ifRecord.getLineCount({ sublistId: 'item' });
       log.debug('Number of Lines', ifLineCount);
 
@@ -94,7 +105,14 @@ define(['N/search', 'N/record'], (search, record) => {
           });
 
           if (isDynamic) {
-            ifRecord.selectLine({ sublistId: 'item', line: index });
+            let x = index - 1;
+            log.debug('After Submit Mode ', 'X: ' + x);
+            if (hasKitMembers) {
+              ifRecord.selectLine({ sublistId: 'item', line: x });
+            } else {
+              ifRecord.selectLine({ sublistId: 'item', line: index });
+            }
+            //
             ifRecord.setCurrentSublistValue({
               sublistId: 'item',
               fieldId: 'custcol_vireo_lot_exp_date',
