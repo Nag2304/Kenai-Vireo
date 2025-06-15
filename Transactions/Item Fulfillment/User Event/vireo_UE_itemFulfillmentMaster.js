@@ -19,10 +19,10 @@ define([
   const beforeSubmit = (scriptContext) => {
     log.debug('beforeSubmit Triggered', `Event Type: ${scriptContext.type}`);
     try {
-      if (scriptContext.type === scriptContext.UserEventType.EDIT) {
-        log.debug('Executing beforeSubmit for EDIT');
-        setLotExpirationDate.beforeSubmit(scriptContext);
-      }
+      // if (scriptContext.type === scriptContext.UserEventType.EDIT) {
+      //   log.debug('Executing beforeSubmit for EDIT');
+      //   setLotExpirationDate.beforeSubmit(scriptContext);
+      // }
       setKitMemberItems.beforeSubmit(scriptContext);
     } catch (error) {
       log.error('beforeSubmit caught an exception', error);
@@ -38,7 +38,10 @@ define([
   const afterSubmit = (scriptContext) => {
     log.debug('afterSubmit Triggered', `Event Type: ${scriptContext.type}`);
     try {
-      if (scriptContext.type === scriptContext.UserEventType.CREATE) {
+      if (
+        scriptContext.type === scriptContext.UserEventType.CREATE ||
+        scriptContext.type === scriptContext.UserEventType.EDIT
+      ) {
         log.debug('Executing afterSubmit for CREATE');
         setLotExpirationDate.afterSubmit(scriptContext);
       }

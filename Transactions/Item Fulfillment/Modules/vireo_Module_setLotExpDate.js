@@ -135,24 +135,46 @@ define(['N/search', 'N/record'], (search, record) => {
               quantites,
             });
           } else {
-            ifRecord.setSublistValue({
-              sublistId: 'item',
-              fieldId: 'custcol_vireo_lot_exp_date',
-              line: index,
-              value: expDate,
-            });
-            ifRecord.setSublistValue({
-              sublistId: 'item',
-              fieldId: 'custcol_vireo_lot_serial_number',
-              line: index,
-              value: lotNumber,
-            });
-            ifRecord.setSublistValue({
-              sublistId: 'item',
-              fieldId: 'custcol_vireo_lot_quantities',
-              line: index,
-              value: quantites,
-            });
+            let x = index - 1;
+            if (hasKitMembers) {
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_exp_date',
+                line: x,
+                value: expDate,
+              });
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_serial_number',
+                line: x,
+                value: lotNumber,
+              });
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_quantities',
+                line: x,
+                value: quantites,
+              });
+            } else {
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_exp_date',
+                line: index,
+                value: expDate,
+              });
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_serial_number',
+                line: index,
+                value: lotNumber,
+              });
+              ifRecord.setSublistValue({
+                sublistId: 'item',
+                fieldId: 'custcol_vireo_lot_quantities',
+                line: index,
+                value: quantites,
+              });
+            }
           }
 
           log.debug('Values Set', { expDate, lotNumber, quantites });
