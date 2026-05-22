@@ -18,7 +18,6 @@ define(['N/search', 'N/record'], (search, record) => {
   /* ------------------------ Global Variables - Begin ------------------------ */
   const exports = {};
   const SAVED_SEARCH_ID = 'customsearch_t_o_mt_hcpot';
-  const MEMORIZED_TRANSACTION_RECORD_TYPE = record.Type.MEM_DOC;
   /* ------------------------- Global Variables - End ------------------------- */
 
   /* ------------------------- Get Input Data - Begin ------------------------- */
@@ -74,7 +73,7 @@ define(['N/search', 'N/record'], (search, record) => {
       );
 
       record.delete({
-        type: MEMORIZED_TRANSACTION_RECORD_TYPE,
+        type: record.Type.MEM_DOC,
         id: recordId,
       });
       log.audit(
