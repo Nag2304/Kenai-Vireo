@@ -76,7 +76,7 @@ define(['N/search', 'N/record'], (search, record) => {
         type: record.Type.MEM_DOC,
         id: recordId,
       });
-      log.audit(
+      log.emergency(
         loggerTitle,
         `Successfully deleted Memorized Transaction record: ${recordId}`,
       );
