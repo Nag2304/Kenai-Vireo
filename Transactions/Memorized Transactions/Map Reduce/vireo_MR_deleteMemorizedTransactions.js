@@ -1,4 +1,3 @@
-
 /**
  * @NApiVersion 2.1
  * @NScriptType MapReduceScript
@@ -9,7 +8,7 @@
  * File name: vireo_MR_deleteMemorizedTransactions.js
  * Script: VIREO | MR Delete Memorized Transactions
  * Author           Date       Version               Remarks
- * Manus AI         05.22.2026      1.00     Initial creation of the script to delete memorized transaction records.
+ * Nagendra Babu  05.22.2026      1.00     Initial creation of the script to delete memorized transaction records.
  *
  */
 
@@ -29,16 +28,25 @@ define(['N/search', 'N/record'], (search, record) => {
    */
   const getInputData = () => {
     const loggerTitle = 'Get Input Data';
-    log.audit(loggerTitle, `|>-------------------${loggerTitle} -Entry-------------------<|`);
+    log.audit(
+      loggerTitle,
+      `|>-------------------${loggerTitle} -Entry-------------------<|`,
+    );
 
     try {
       const memorizedTransactionSearch = search.load({
         id: SAVED_SEARCH_ID,
       });
-      log.audit(loggerTitle, `Successfully loaded saved search: ${SAVED_SEARCH_ID}`);
+      log.audit(
+        loggerTitle,
+        `Successfully loaded saved search: ${SAVED_SEARCH_ID}`,
+      );
       return memorizedTransactionSearch;
     } catch (error) {
-      log.error(loggerTitle, `Error loading saved search ${SAVED_SEARCH_ID}: ${error.message}`);
+      log.error(
+        loggerTitle,
+        `Error loading saved search ${SAVED_SEARCH_ID}: ${error.message}`,
+      );
       throw error; // Re-throw the error to halt script execution if input data cannot be retrieved
     }
   };
@@ -53,23 +61,38 @@ define(['N/search', 'N/record'], (search, record) => {
    */
   const reduce = (reduceContext) => {
     const loggerTitle = 'Reduce Phase';
-    log.audit(loggerTitle, `|>-------------------${loggerTitle} -Entry-------------------<|`);
+    log.audit(
+      loggerTitle,
+      `|>-------------------${loggerTitle} -Entry-------------------<|`,
+    );
 
     try {
       const recordId = reduceContext.key;
-      log.debug(loggerTitle, `Attempting to delete Memorized Transaction record with ID: ${recordId}`);
+      log.debug(
+        loggerTitle,
+        `Attempting to delete Memorized Transaction record with ID: ${recordId}`,
+      );
 
       record.delete({
         type: MEMORIZED_TRANSACTION_RECORD_TYPE,
         id: recordId,
       });
-      log.audit(loggerTitle, `Successfully deleted Memorized Transaction record: ${recordId}`);
+      log.audit(
+        loggerTitle,
+        `Successfully deleted Memorized Transaction record: ${recordId}`,
+      );
     } catch (error) {
-      log.error(loggerTitle, `Error deleting Memorized Transaction record ${reduceContext.key}: ${error.message}`);
+      log.error(
+        loggerTitle,
+        `Error deleting Memorized Transaction record ${reduceContext.key}: ${error.message}`,
+      );
       // Depending on requirements, you might want to re-throw or handle specific errors differently
     }
 
-    log.audit(loggerTitle, `|>-------------------${loggerTitle} -Exit-------------------<|`);
+    log.audit(
+      loggerTitle,
+      `|>-------------------${loggerTitle} -Exit-------------------<|`,
+    );
   };
   /* --------------------------- Reduce Phase - End --------------------------- */
 
@@ -86,11 +109,17 @@ define(['N/search', 'N/record'], (search, record) => {
    */
   const summarize = (summarizeContext) => {
     const loggerTitle = 'Summarize Phase';
-    log.audit(loggerTitle, `|>-------------------${loggerTitle} -Entry-------------------<|`);
+    log.audit(
+      loggerTitle,
+      `|>-------------------${loggerTitle} -Entry-------------------<|`,
+    );
 
     try {
       log.audit(loggerTitle, `Summary Usage: ${summarizeContext.usage}`);
-      log.audit(loggerTitle, `Summary Concurrency: ${summarizeContext.concurrency}`);
+      log.audit(
+        loggerTitle,
+        `Summary Concurrency: ${summarizeContext.concurrency}`,
+      );
       log.audit(loggerTitle, `Summary Yields: ${summarizeContext.yields}`);
 
       // Log errors from input, map, and reduce phases
@@ -112,7 +141,10 @@ define(['N/search', 'N/record'], (search, record) => {
       log.error(loggerTitle, `Error during summarize phase: ${error.message}`);
     }
 
-    log.audit(loggerTitle, `|>-------------------${loggerTitle} -Exit-------------------<|`);
+    log.audit(
+      loggerTitle,
+      `|>-------------------${loggerTitle} -Exit-------------------<|`,
+    );
   };
   /* ------------------------- Summarize Phase - End ------------------------ */
 
