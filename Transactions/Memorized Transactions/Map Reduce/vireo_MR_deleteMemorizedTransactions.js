@@ -110,39 +110,64 @@ define(['N/search', 'N/record'], (search, record) => {
     const loggerTitle = 'Summarize Phase';
     log.audit(
       loggerTitle,
-      `|>-------------------${loggerTitle} -Entry-------------------<|`,
+      '|>-------------------' + loggerTitle + ' -Entry-------------------<|',
     );
-
+    //
     try {
-      log.audit(loggerTitle, `Summary Usage: ${summarizeContext.usage}`);
+      log.audit(loggerTitle, 'Summary Usage: ' + summarizeContext.usage);
       log.audit(
         loggerTitle,
-        `Summary Concurrency: ${summarizeContext.concurrency}`,
+        'Summary Concurrency: ' + summarizeContext.concurrency,
       );
-      log.audit(loggerTitle, `Summary Yields: ${summarizeContext.yields}`);
-
-      // Log errors from input, map, and reduce phases
-      summarizeContext.inputSummary.errors.iterator().each((key, error) => {
-        log.error('Input Error', `Key: ${key}, Error: ${error}`);
-        return true;
-      });
-      summarizeContext.mapSummary.errors.iterator().each((key, error) => {
-        log.error('Map Error', `Key: ${key}, Error: ${error}`);
-        return true;
-      });
-      summarizeContext.reduceSummary.errors.iterator().each((key, error) => {
-        log.error('Reduce Error', `Key: ${key}, Error: ${error}`);
-        return true;
-      });
-
+      log.audit(loggerTitle, 'Summary Yields: ' + summarizeContext.yields);
+      //
+      // Log Input phase errors
+      if (
+        summarizeContext.inputSummary &&
+        summarizeContext.inputSummary.errors
+      ) {
+        summarizeContext.inputSummary.errors.iterator().each((key, error) => {
+          log.error(
+            loggerTitle + ' Input Error',
+            'Key: ' + key + ' | Error: ' + error,
+          );
+          return true;
+        });
+      }
+      //
+      // Log Map phase errors
+      if (summarizeContext.mapSummary && summarizeContext.mapSummary.errors) {
+        summarizeContext.mapSummary.errors.iterator().each((key, error) => {
+          log.error(
+            loggerTitle + ' Map Error',
+            'Key: ' + key + ' | Error: ' + error,
+          );
+          return true;
+        });
+      }
+      //
+      // Log Reduce phase errors
+      if (
+        summarizeContext.reduceSummary &&
+        summarizeContext.reduceSummary.errors
+      ) {
+        summarizeContext.reduceSummary.errors.iterator().each((key, error) => {
+          log.error(
+            loggerTitle + ' Reduce Error',
+            'Key: ' + key + ' | Error: ' + error,
+          );
+          return true;
+        });
+      }
+      //
       log.audit(loggerTitle, 'Map/Reduce script execution completed.');
     } catch (error) {
-      log.error(loggerTitle, `Error during summarize phase: ${error.message}`);
+      log.error(loggerTitle + ' caught an exception', error);
     }
-
+    //
     log.audit(
       loggerTitle,
-      `|>-------------------${loggerTitle} -Exit-------------------<|`,
+      '|>-------------------' + loggerTitle + ' -Exit-------------------<|',
     );
   };
   /* ------------------------- Summarize Phase - End ------------------------ */
